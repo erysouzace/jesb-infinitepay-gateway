@@ -176,13 +176,18 @@ class JESB_IPG_Gateway extends WC_Payment_Gateway {
     public function verify_on_return( $order_id ) {
         $order = wc_get_order( $order_id );
         if ( ! $order || $order->get_payment_method() !== $this->id ) { return; }
-        if ( ! isset( $_GET['key'] ) || ! hash_equals( $order->get_order_key(), sanitize_text_field( wp_unslash( $_GET['key'] ) ) ) ) { return; }
-        if ( ! isset( $_GET['transaction_nsu'], $_GET['slug'], $_GET['order_nsu'] ) ) { return; }
+        // A processor redirect cannot include a WordPress session nonce.
+        // The order key is matched first; a payment is never approved without
+        // an independent verification at InfinitePay's payment_check endpoint.
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- External payment callback authenticated with order key and authoritative API verification.
+        if ( ! isset( $_GET['key'] ) || ! is_string( $_GET['key'] ) || ! hash_equals( $order->get_order_key(), sanitize_text_field( wp_unslash( $_GET['key'] ) ) ) ) { return; }
+        if ( ! isset( $_GET['transaction_nsu'], $_GET['slug'], $_GET['order_nsu'] ) || ! is_string( $_GET['transaction_nsu'] ) || ! is_string( $_GET['slug'] ) || ! is_string( $_GET['order_nsu'] ) ) { return; }
         $params = array(
             'transaction_nsu' => sanitize_text_field( wp_unslash( $_GET['transaction_nsu'] ) ),
             'slug' => sanitize_text_field( wp_unslash( $_GET['slug'] ) ),
             'order_nsu' => sanitize_text_field( wp_unslash( $_GET['order_nsu'] ) ),
         );
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
         $result = JESB_IPG_Confirmation::verify( $order, $params );
         if ( is_wp_error( $result ) ) {
             if ( in_array( $result->get_error_code(), array( 'jesb_ipg_network', 'jesb_ipg_http', 'jesb_ipg_busy', 'jesb_ipg_unpaid' ), true ) ) {

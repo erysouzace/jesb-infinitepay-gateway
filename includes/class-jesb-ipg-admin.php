@@ -9,7 +9,15 @@ final class JESB_IPG_Admin {
     public static function render() {
         if ( ! current_user_can( 'manage_woocommerce' ) ) { wp_die( esc_html__( 'Acesso negado.', 'jesb-infinitepay-gateway' ) ); }
         if ( ! function_exists( 'wc_get_orders' ) ) { return; }
-        $days = isset( $_GET['jesb_period'] ) ? absint( wp_unslash( $_GET['jesb_period'] ) ) : 30;
+        // A period filter is read-only, but the admin form includes a nonce to
+        // prevent unauthenticated or unintended query processing.
+        $days = 30;
+        if ( isset( $_GET['jesb_period'], $_GET['jesb_period_nonce'] ) && is_scalar( $_GET['jesb_period'] ) && is_string( $_GET['jesb_period_nonce'] ) ) {
+            $period_nonce = sanitize_text_field( wp_unslash( $_GET['jesb_period_nonce'] ) );
+            if ( wp_verify_nonce( $period_nonce, 'jesb_ipg_period_filter' ) ) {
+                $days = absint( wp_unslash( $_GET['jesb_period'] ) );
+            }
+        }
         if ( ! in_array( $days, array( 7, 30, 90 ), true ) ) { $days = 30; }
         $from = time() - DAY_IN_SECONDS * $days;
         $paid = 0; $pending = 0; $gross = 0; $needs_review = 0; $records = array();
@@ -37,8 +45,9 @@ final class JESB_IPG_Admin {
         $settings_url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=jesb_infinitepay' );
         echo '<div class="wrap"><h1>' . esc_html__( 'JESB InfinitePay — Financeiro', 'jesb-infinitepay-gateway' ) . '</h1>';
         echo '<p>' . esc_html__( 'Relatório de pedidos WooCommerce, não representa liquidações, taxas reais ou saldo bancário.', 'jesb-infinitepay-gateway' ) . '</p>';
-        echo '<form method="get"><input type="hidden" name="page" value="jesb-infinitepay-financeiro"><label for="jesb_period">' . esc_html__( 'Período', 'jesb-infinitepay-gateway' ) . '</label> <select id="jesb_period" name="jesb_period">';
+        echo '<form method="get"><input type="hidden" name="page" value="jesb-infinitepay-financeiro"><input type="hidden" name="jesb_period_nonce" value="' . esc_attr( wp_create_nonce( 'jesb_ipg_period_filter' ) ) . '"><label for="jesb_period">' . esc_html__( 'Período', 'jesb-infinitepay-gateway' ) . '</label> <select id="jesb_period" name="jesb_period">';
         foreach ( array( 7, 30, 90 ) as $period ) {
+            // translators: %d is the number of days in the financial report period.
             echo '<option value="' . esc_attr( (string) $period ) . '" ' . selected( $days, $period, false ) . '>' . esc_html( sprintf( __( 'Últimos %d dias', 'jesb-infinitepay-gateway' ), $period ) ) . '</option>';
         }
         echo '</select> <button class="button">' . esc_html__( 'Filtrar', 'jesb-infinitepay-gateway' ) . '</button></form>';

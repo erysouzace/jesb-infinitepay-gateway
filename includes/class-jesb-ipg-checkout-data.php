@@ -19,6 +19,7 @@ final class JESB_IPG_Checkout_Data {
                 $entries[] = array( 'description' => $title, 'quantity' => $qty, 'price' => $unit );
             }
             if ( $remainder > 0 ) {
+                // translators: %s is the product title whose line total needed rounding.
                 $entries[] = array( 'description' => sprintf( __( 'Ajuste de arredondamento: %s', 'jesb-infinitepay-gateway' ), $title ), 'quantity' => 1, 'price' => $remainder );
             }
         }
@@ -71,7 +72,8 @@ final class JESB_IPG_Checkout_Data {
 
     private static function fallback( WC_Order $order, $total ) {
         return array( array(
-            'description' => sprintf( __( 'Pedido #%s — %s', 'jesb-infinitepay-gateway' ), $order->get_order_number(), get_bloginfo( 'name' ) ),
+            // translators: 1: WooCommerce order number. 2: Store name.
+            'description' => sprintf( __( 'Pedido #%1$s — %2$s', 'jesb-infinitepay-gateway' ), $order->get_order_number(), get_bloginfo( 'name' ) ),
             'quantity' => 1, 'price' => $total,
         ) );
     }

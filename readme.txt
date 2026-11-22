@@ -3,8 +3,9 @@ Contributors: erysouzace
 Tags: woocommerce, pix, payment-gateway, checkout, infinitepay
 Requires at least: 6.4
 Requires PHP: 8.2
+Tested up to: 7.1
 Requires Plugins: woocommerce
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -59,7 +60,14 @@ No. It is independently maintained by JESB DIGITAL.
 
 == Changelog ==
 
-= 1.1.1 =
+= 1.1.2 =
+* Corrected WordPress internationalization translator comments and ordered placeholders.
+* Added nonce to the read-only administrative period filter.
+* Documented the external payment callback exception (order key + payment_check verification).
+* Removed discouraged manual translation loader and added Tested up to metadata.
+
+
+= 1.1.2 =
 * Fixed expired-link reuse and blocked unsafe re-issuance that could cause duplicate payments.
 * Added bounded Action Scheduler verification retries for transactions with complete payment identifiers.
 * Added a period-filtered financial overview with an explicit data cap and manual attention flags.
@@ -82,7 +90,7 @@ No. It is independently maintained by JESB DIGITAL.
 
 == Upgrade Notice ==
 
-= 1.1.1 =
+= 1.1.2 =
 Security and reliability fixes. Expired or uncertain payment links may require manual reconciliation before a new invoice can be created.
 
 = 1.1.0 =
