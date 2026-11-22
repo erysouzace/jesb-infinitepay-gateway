@@ -1,0 +1,1 @@
+Assets icon/banner criados para o projeto. Capturas reais do plugin devem ser adicionadas aqui após homologação, como `screenshot-1.png` e `screenshot-2.png`. Não publicar imagens de demonstração fictícias como telas reais.

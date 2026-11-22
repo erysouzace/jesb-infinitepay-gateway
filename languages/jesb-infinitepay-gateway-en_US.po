@@ -1,0 +1,98 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nLanguage: en_US\nPlural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "A InfinitePay não conseguiu processar a solicitação. Tente novamente."
+msgstr "InfinitePay could not process the request. Please try again."
+
+msgid "A InfinitePay não retornou um endereço seguro de pagamento."
+msgstr "InfinitePay did not return a recognized secure payment URL."
+
+msgid "A confirmação está em análise. Se o pagamento foi realizado, não pague novamente. A loja poderá verificar sua transação."
+msgstr "Payment confirmation is being reviewed. If you have paid, do not pay again. The store can check your transaction."
+
+msgid "Ativar InfinitePay no checkout"
+msgstr "Enable InfinitePay at checkout"
+
+msgid "Ativar/Desativar"
+msgstr "Enable/Disable"
+
+msgid "Configurações"
+msgstr "Settings"
+
+msgid "Conteúdo inválido."
+msgstr "Invalid request body."
+
+msgid "Descrição exibida no checkout"
+msgstr "Checkout description"
+
+msgid "Diagnóstico"
+msgstr "Diagnostics"
+
+msgid "Esta URL é enviada automaticamente à InfinitePay em cada link."
+msgstr "This URL is automatically sent to InfinitePay for each payment link."
+
+msgid "Identificador da conta, sem o símbolo $."
+msgstr "Account handle, without the $ symbol."
+
+msgid "InfiniteTag"
+msgstr "InfiniteTag"
+
+msgid "InfiniteTag inválida. Utilize apenas letras, números, ponto, hífen ou sublinhado."
+msgstr "Invalid InfiniteTag. Use letters, digits, periods, hyphens or underscores only."
+
+msgid "JESB InfinitePay Gateway"
+msgstr "JESB InfinitePay Gateway"
+
+msgid "Não foi possível contactar a InfinitePay. Tente novamente."
+msgstr "Could not contact InfinitePay. Please try again."
+
+msgid "O pagamento requer HTTPS, reais brasileiros e uma InfiniteTag configurada."
+msgstr "Payment requires HTTPS, Brazilian reais and a configured InfiniteTag."
+
+msgid "O retorno exato é gerado por pedido e já é transmitido à API. Não é necessário cadastrá-lo manualmente."
+msgstr "The exact return URL is generated for each order and sent to the API automatically. No manual registration is required."
+
+msgid "O valor do pedido mudou após a geração do pagamento. Contate a loja para regularizar a cobrança."
+msgstr "The order total changed after the payment link was created. Contact the store to resolve the charge."
+
+msgid "O valor mínimo da InfinitePay é R$ 1,00."
+msgstr "InfinitePay requires a minimum payment of BRL 1.00."
+
+msgid "Pagamento ainda não confirmado."
+msgstr "Payment has not yet been confirmed."
+
+msgid "Pagamento hospedado com Pix ou cartão. A aprovação é verificada diretamente na InfinitePay."
+msgstr "Hosted Pix or card payments. Payment approval is verified directly with InfinitePay."
+
+msgid "Pague com segurança na página da InfinitePay."
+msgstr "Pay securely on InfinitePay’s checkout page."
+
+msgid "Pedido %s — loja"
+msgstr "Order %s — store"
+
+msgid "Pedido inválido para esta forma de pagamento."
+msgstr "Invalid order for this payment method."
+
+msgid "Pedido não localizado."
+msgstr "Order not found."
+
+msgid "Pix ou cartão — InfinitePay"
+msgstr "Pix or card — InfinitePay"
+
+msgid "Referência inválida."
+msgstr "Invalid order reference."
+
+msgid "Registrar eventos técnicos sem informações pessoais ou segredos"
+msgstr "Log technical events without personal data or secrets"
+
+msgid "Resposta de pagamento inválida."
+msgstr "Invalid payment response."
+
+msgid "Título exibido no checkout"
+msgstr "Checkout title"
+
+msgid "URL de retorno"
+msgstr "Return URL"
+
+msgid "URL do webhook"
+msgstr "Webhook URL"

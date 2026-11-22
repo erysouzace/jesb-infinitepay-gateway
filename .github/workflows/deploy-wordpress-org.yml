@@ -1,0 +1,22 @@
+name: Deploy to WordPress.org (after approval)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmed:
+        description: 'Type PUBLICAR to confirm WordPress.org SVN access and release approval'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  release:
+    if: github.event.inputs.confirmed == 'PUBLICAR' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: wordpress-org
+    steps:
+      - uses: actions/checkout@v4
+      - uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: jesb-infinitepay-gateway
