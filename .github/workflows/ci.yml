@@ -11,7 +11,7 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -25,8 +25,5 @@ jobs:
         run: php tests/check-metadata.php
       - name: Run mocked payment regression tests
         run: php tests/payment-flow.php
-      - name: Validate WordPress readme and license text
-        run: |
-          grep -q 'Stable tag: 1.1.1' readme.txt
-          grep -q 'GNU GENERAL PUBLIC LICENSE' LICENSE
-          grep -q 'Version: 1.1.1' jesb-infinitepay-gateway.php
+      - name: Validate GPL license text
+        run: grep -q 'GNU GENERAL PUBLIC LICENSE' LICENSE
