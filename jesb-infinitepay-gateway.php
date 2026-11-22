@@ -3,7 +3,7 @@
  * Plugin Name: JESB InfinitePay Gateway
  * Plugin URI: https://jesbdigital.com.br/
  * Description: Checkout hospedado InfinitePay para WooCommerce, confirmação validada e suporte a blocos/HPOS.
- * Version: 1.1.3
+ * Version: 1.1.4
  * Requires Plugins: woocommerce
  * Requires PHP: 8.2
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'JESB_IPG_VERSION', '1.1.3' );
+define( 'JESB_IPG_VERSION', '1.1.4' );
 define( 'JESB_IPG_PATH', plugin_dir_path( __FILE__ ) );
 define( 'JESB_IPG_URL', plugin_dir_url( __FILE__ ) );
 

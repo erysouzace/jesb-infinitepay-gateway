@@ -1,3 +1,9 @@
+## 1.1.4 — WordPress.org submission metadata
+
+- Set WordPress.org contributor to `jesbdigital` and provide official InfinitePay terms/privacy links.
+- Update README and publication guide; align plugin and readme version metadata.
+- No change to payment, webhook, locks, reconciliation, or checkout code compared to 1.1.3.
+
 ## 1.1.3 — Release candidate (requires live regression)
 
 - Replaced timeout-based option locks with connection-scoped MySQL/MariaDB advisory locks.

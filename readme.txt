@@ -5,7 +5,7 @@ Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
 Requires Plugins: woocommerce
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,10 @@ No. It is independently maintained by JESB DIGITAL.
 
 == Changelog ==
 
+= 1.1.4 =
+* Updated WordPress.org contributor to jesbdigital and reviewed external-service legal links.
+* Updated submission instructions and release documentation. No payment-processing behavior changes compared with 1.1.3.
+
 = 1.1.3 =
 * Replaced expiring option-based payment locks with connection-scoped MySQL/MariaDB advisory locks.
 * Added regression checks for unavailable database locks, network timeouts, HTTP 503 and malformed provider responses.
@@ -95,6 +99,9 @@ No. It is independently maintained by JESB DIGITAL.
 * Initial hosted gateway, webhook and payment_check integration.
 
 == Upgrade Notice ==
+
+= 1.1.4 =
+Documentation and metadata release. Payment behavior remains unchanged from 1.1.3.
 
 = 1.1.3 =
 Replaces the payment locking mechanism; test on a non-production WordPress environment with MySQL/MariaDB before upgrading live stores.
