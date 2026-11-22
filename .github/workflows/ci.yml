@@ -25,5 +25,8 @@ jobs:
         run: php tests/check-metadata.php
       - name: Run mocked payment regression tests
         run: php tests/payment-flow.php
-      - name: Validate GPL license text
-        run: grep -q 'GNU GENERAL PUBLIC LICENSE' LICENSE
+      - name: Check Plugin Check regressions
+        run: php tests/plugin-check-regressions.php
+      - name: Validate WordPress readme and license text
+        run: |
+          grep -q 'GNU GENERAL PUBLIC LICENSE' LICENSE

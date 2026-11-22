@@ -1,3 +1,17 @@
+## 1.1.3 — Release candidate (requires live regression)
+
+- Replaced timeout-based option locks with connection-scoped MySQL/MariaDB advisory locks.
+- Added mocked tests for transport failure, HTTP 503, malformed payment-check response and lock unavailability.
+- Fixed WordPress.org readme history.
+- Updated CI version assertions to dynamic metadata validation and checkout@v6.
+
+## 1.1.2 — WordPress Plugin Check compatibility
+
+- Resolve 5 reported Plugin Check errors: translator descriptions, ordered placeholders and Tested up to metadata.
+- Add nonce verification for the administrative, read-only filter.
+- Document the nonce exception for externally-initiated payment returns, which remain checked via order key and InfinitePay API.
+- Remove discouraged manual translation loader.
+
 # Histórico de alterações
 
 ## 1.1.1 — Security & Quality (candidata a homologação)

@@ -3,6 +3,25 @@
 define( 'ABSPATH', __DIR__ );
 define( 'DAY_IN_SECONDS', 86400 );
 class WP_Error { private $code; public function __construct($c,$m="",$d=null){$this->code=$c;} public function get_error_code(){return $this->code;} public function get_error_message(){return $this->code;} }
+class wpdb {
+    private $locks = array();
+    public $allow_locks = true;
+    public function prepare( $query, $value ) { return str_replace( '%s', "'" . str_replace( "'", "''", $value ) . "'", $query ); }
+    public function get_var( $sql ) {
+        if ( ! $this->allow_locks ) { return null; }
+        if ( preg_match( "/^SELECT GET_LOCK\('([^']+)', 0\)$/", $sql, $m ) ) {
+            // Simulates a competing worker when the lock is held.
+            if ( isset( $this->locks[ $m[1] ] ) ) { return 0; }
+            $this->locks[ $m[1] ] = true; return 1;
+        }
+        if ( preg_match( "/^SELECT RELEASE_LOCK\('([^']+)'\)$/", $sql, $m ) ) {
+            if ( ! isset( $this->locks[ $m[1] ] ) ) { return 0; }
+            unset( $this->locks[ $m[1] ] ); return 1;
+        }
+        return null;
+    }
+}
+$GLOBALS['wpdb'] = new wpdb();
 class WC_Order_Item_Product { public function __construct(public $product){} public function get_product(){return $this->product;} }
 class WC_Product { public function __construct(private $virtual, private $downloadable){} public function is_virtual(){return $this->virtual;} public function is_downloadable(){return $this->downloadable;} }
 class WC_Order {
@@ -62,7 +81,14 @@ check(JESB_IPG_Confirmation::valid_identifiers($nsu,'transaction-123','invoice_s
 check(!JESB_IPG_Confirmation::valid_identifiers($nsu,'../../../','slug'), 'Reject malformed transaction identifiers');
 $lock=JESB_IPG_Attempts::lock(42,'create');check($lock!=='','Acquire checkout lock');
 check(JESB_IPG_Attempts::lock(42,'create')==='','Reject concurrent checkout');
-JESB_IPG_Attempts::unlock($lock);check(JESB_IPG_Attempts::lock(42,'create')!=='','Release checkout lock');
+JESB_IPG_Attempts::unlock($lock);
+$reacquired = JESB_IPG_Attempts::lock(42,'create');
+check($reacquired!=='','Release checkout lock');
+JESB_IPG_Attempts::unlock($reacquired);
+$GLOBALS['wpdb']->allow_locks = false;
+check(JESB_IPG_Attempts::lock(42,'create')==='', 'Fail closed when database locking unavailable');
+$GLOBALS['wpdb']->allow_locks = true;
+
 $completed=JESB_IPG_Confirmation::completion_status('processing',42,$order);
 check($completed==='processing','Empty cart not completed');
 $order->items=[new WC_Order_Item_Product(new WC_Product(true,true))];
@@ -108,4 +134,20 @@ $webhook=JESB_IPG_Confirmation::webhook(new WP_REST_Request(['order_nsu'=>$nsu,'
 check(!$order->is_paid() && is_array($webhook) && !empty($webhook['queued']),'Unsigned webhook does not complete unpaid order');
 $forged=JESB_IPG_Confirmation::webhook(new WP_REST_Request(['order_nsu'=>'jig-42-'.str_repeat('z',24),'transaction_nsu'=>'tx-fake','invoice_slug'=>'invoice_slug']));
 check(is_wp_error($forged) && !$order->is_paid(),'Unknown attempt webhook is rejected');
+// Network timeouts, provider failures and malformed JSON must never approve payments.
+$order->status='pending';
+$order->meta['_jesb_ipg_confirmed_transaction']='';
+$GLOBALS['mock_response'] = new WP_Error('http_request_failed','timeout');
+$timeout = JESB_IPG_Confirmation::verify($order,['order_nsu'=>$nsu,'transaction_nsu'=>'tx-timeout','slug'=>'slug-good']);
+check(is_wp_error($timeout) && $timeout->get_error_code()==='jesb_ipg_network' && !$order->is_paid(),'Network timeout leaves order unpaid');
+$GLOBALS['mock_response'] = ['code'=>503,'body'=>'Service unavailable'];
+$failure = JESB_IPG_Confirmation::verify($order,['order_nsu'=>$nsu,'transaction_nsu'=>'tx-failure','slug'=>'slug-good']);
+check(is_wp_error($failure) && $failure->get_error_code()==='jesb_ipg_http' && !$order->is_paid(),'HTTP 503 leaves order unpaid');
+$GLOBALS['mock_response'] = ['code'=>200,'body'=>'broken-json'];
+$invalid = JESB_IPG_Confirmation::verify($order,['order_nsu'=>$nsu,'transaction_nsu'=>'tx-invalid','slug'=>'slug-good']);
+check(is_wp_error($invalid) && $invalid->get_error_code()==='jesb_ipg_json' && !$order->is_paid(),'Malformed provider response leaves order unpaid');
+$GLOBALS['mock_response'] = ['code'=>200,'body'=>json_encode(['success'=>true,'paid'=>false,'amount'=>1000])];
+$first = JESB_IPG_Reconciliation::queue($order,$nsu,'tx-retry','slug-good');
+check($first === true, 'Schedule reconciliation after checkable failure');
+check(JESB_IPG_Reconciliation::queue($order,$nsu,'tx-retry','slug-good',6) === false,'Reconciliation never schedules past retry budget');
 echo "All mock-based tests passed.\n";

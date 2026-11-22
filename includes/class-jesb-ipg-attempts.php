@@ -36,19 +36,39 @@ final class JESB_IPG_Attempts {
         $order->update_meta_data( '_jesb_ipg_attempts', $all );
         $order->save();
     }
+    /**
+     * Use a connection-bound MySQL/MariaDB advisory lock instead of a timed
+     * option lock. The database releases it when a worker disconnects, and
+     * no stale-lock scavenger can accidentally delete a newer worker's lock.
+     * Fail closed if advisory locking is unavailable.
+     */
+    private static $held_locks = array();
+
     public static function lock( $id, $suffix ) {
-        $key = 'jesb_ipg_' . $suffix . '_' . absint( $id );
-        $now = time();
-        if ( add_option( $key, $now, '', 'no' ) ) { return $key; }
-        // Stale cleanup is intentionally conservative: wait longer than network timeout.
-        $since = (int) get_option( $key, 0 );
-        if ( $since > 0 && $since < $now - 120 ) {
-            delete_option( $key );
-            if ( add_option( $key, $now, '', 'no' ) ) { return $key; }
+        global $wpdb;
+        if ( ! $wpdb instanceof wpdb || ! in_array( $suffix, array( 'create', 'confirm' ), true ) ) {
+            return '';
         }
-        return '';
+        $name = 'jesb_ipg_' . $suffix . '_' . absint( $id );
+        if ( isset( self::$held_locks[ $name ] ) ) {
+            return '';
+        }
+        $result = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 0)', $name ) );
+        if ( '1' !== (string) $result ) {
+            return '';
+        }
+        self::$held_locks[ $name ] = true;
+        return $name;
     }
-    public static function unlock( $key ) {
-        if ( $key ) { delete_option( $key ); }
+
+    public static function unlock( $name ) {
+        global $wpdb;
+        if ( ! $name || ! isset( self::$held_locks[ $name ] ) ) {
+            return;
+        }
+        if ( $wpdb instanceof wpdb ) {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) );
+        }
+        unset( self::$held_locks[ $name ] );
     }
 }

@@ -5,7 +5,7 @@ Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
 Requires Plugins: woocommerce
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,12 @@ No. It is independently maintained by JESB DIGITAL.
 
 == Changelog ==
 
+= 1.1.3 =
+* Replaced expiring option-based payment locks with connection-scoped MySQL/MariaDB advisory locks.
+* Added regression checks for unavailable database locks, network timeouts, HTTP 503 and malformed provider responses.
+* Updated the release workflow to validate version metadata dynamically.
+* Corrected the historical changelog entry for version 1.1.1.
+
 = 1.1.2 =
 * Corrected WordPress internationalization translator comments and ordered placeholders.
 * Added nonce to the read-only administrative period filter.
@@ -67,7 +73,7 @@ No. It is independently maintained by JESB DIGITAL.
 * Removed discouraged manual translation loader and added Tested up to metadata.
 
 
-= 1.1.2 =
+= 1.1.1 =
 * Fixed expired-link reuse and blocked unsafe re-issuance that could cause duplicate payments.
 * Added bounded Action Scheduler verification retries for transactions with complete payment identifiers.
 * Added a period-filtered financial overview with an explicit data cap and manual attention flags.
@@ -89,6 +95,9 @@ No. It is independently maintained by JESB DIGITAL.
 * Initial hosted gateway, webhook and payment_check integration.
 
 == Upgrade Notice ==
+
+= 1.1.3 =
+Replaces the payment locking mechanism; test on a non-production WordPress environment with MySQL/MariaDB before upgrading live stores.
 
 = 1.1.2 =
 Security and reliability fixes. Expired or uncertain payment links may require manual reconciliation before a new invoice can be created.

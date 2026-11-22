@@ -5,7 +5,7 @@
 **Gateway gratuito e independente para WooCommerce com Pix e cartão via checkout hospedado InfinitePay.**
 
 [![CI](https://github.com/erysouzace/jesb-infinitepay-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/erysouzace/jesb-infinitepay-gateway/actions/workflows/ci.yml)
-![Release](https://img.shields.io/badge/release-v1.1.1--candidate-orange)
+![Release](https://img.shields.io/badge/release-v1.1.2--candidate-orange)
 ![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)
 ![WooCommerce](https://img.shields.io/badge/WooCommerce-HPOS%20%2B%20Blocks-96588a)
 
@@ -13,7 +13,7 @@
 
 </div>
 
-> **Aviso:** v1.1.1 é uma candidata de homologação. Os testes locais não comprovam compatibilidade com todas as versões WooCommerce, nem segurança absoluta. Não utilizar em produção sem validação operacional.
+> **Aviso:** v1.1.2 é uma candidata de homologação. Os testes locais não comprovam compatibilidade com todas as versões WooCommerce, nem segurança absoluta. Não utilizar em produção sem validação operacional.
 
 ## Recursos
 
@@ -63,6 +63,7 @@ No WordPress: **WooCommerce → JESB InfinitePay**. Visão read-only de indicado
 ```bash
 php tests/check-metadata.php
 php tests/payment-flow.php
+php tests/plugin-check-regressions.php
 find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 ```
 
