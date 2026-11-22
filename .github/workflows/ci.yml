@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1', '8.2', '8.3', '8.4']
+        php: ['8.2', '8.3', '8.4']
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -23,3 +23,10 @@ jobs:
           if grep -RniE 'BEGIN (RSA|OPENSSH|PRIVATE) KEY|sk_live_[[:alnum:]]+' --include='*.php' --include='*.txt' .; then exit 1; fi
       - name: Verify release metadata
         run: php tests/check-metadata.php
+      - name: Run mocked payment regression tests
+        run: php tests/payment-flow.php
+      - name: Validate WordPress readme and license text
+        run: |
+          grep -q 'Stable tag: 1.1.1' readme.txt
+          grep -q 'GNU GENERAL PUBLIC LICENSE' LICENSE
+          grep -q 'Version: 1.1.1' jesb-infinitepay-gateway.php

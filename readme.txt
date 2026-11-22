@@ -2,9 +2,9 @@
 Contributors: erysouzace
 Tags: woocommerce, pix, payment-gateway, checkout, infinitepay
 Requires at least: 6.4
-Requires PHP: 7.4
+Requires PHP: 8.2
 Requires Plugins: woocommerce
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,10 +18,10 @@ JESB InfinitePay Gateway is an **independent, unofficial** payment integration b
 * High-Performance Order Storage (HPOS) compatibility declaration.
 * Buyer contact details and order lines are sent to the processor for prefill and identification.
 * Digital-only downloadable orders can be completed on payment; physical and mixed orders remain processing.
-* Read-only WooCommerce > JESB InfinitePay financial overview based on the latest 100 store orders; not a bank statement.
+* Read-only period-filtered WooCommerce > JESB InfinitePay financial overview, capped at 2,000 recent orders per period; not a bank statement.
 * Optional sanitized diagnostic logs.
 
-**Requirements and limitations:** Only BRL, HTTPS and an enabled InfinitePay Checkout account are supported. The payment provider may require customer confirmation. An API key is strongly recommended for links with expiration and single-use options. Without the webhook or return transaction identifiers, this integration cannot independently recover every payment. There is no publicly documented fee/balance reconciliation endpoint in this checkout API. The financial overview does not claim to show settlement, exact fees or available account balance.
+**Requirements and limitations:** Only BRL, HTTPS and an enabled InfinitePay Checkout account are supported. The payment provider may require customer confirmation. An API key is strongly recommended for links with expiration and single-use options. A missed webhook can be retried only after transaction identifiers have been received; otherwise the merchant must reconcile manually. Expired links are not automatically reissued to prevent duplicate charges. There is no publicly documented fee/balance reconciliation endpoint in this checkout API. The financial overview does not claim to show settlement, exact fees or available account balance.
 
 **External service:** When a customer chooses InfinitePay, the plugin sends order line descriptions and amounts, order reference, buyer contact details (where provided), and shipping address (for physical orders) directly to InfinitePay's API at `https://api.checkout.infinitepay.io/links`. Payment verification requests are sent to `https://api.checkout.infinitepay.io/payment_check`. The provider hosts the checkout, receives payment details directly, and handles payment processing. See [InfinitePay documentation](https://www.infinitepay.io/checkout-documentacao) and its privacy terms. Site owners are responsible for informing customers of payment processor data transfers in their privacy policy. No unrelated telemetry or developer analytics are sent.
 
@@ -59,6 +59,13 @@ No. It is independently maintained by JESB DIGITAL.
 
 == Changelog ==
 
+= 1.1.1 =
+* Fixed expired-link reuse and blocked unsafe re-issuance that could cause duplicate payments.
+* Added bounded Action Scheduler verification retries for transactions with complete payment identifiers.
+* Added a period-filtered financial overview with an explicit data cap and manual attention flags.
+* Added full GPLv2 license text, security policy, regression tests and contributor documentation.
+
+
 = 1.1.0 =
 * Added read-only operational finance overview inside WooCommerce.
 * Added public-directory documentation and release structure.
@@ -74,6 +81,9 @@ No. It is independently maintained by JESB DIGITAL.
 * Initial hosted gateway, webhook and payment_check integration.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Security and reliability fixes. Expired or uncertain payment links may require manual reconciliation before a new invoice can be created.
 
 = 1.1.0 =
 Introduces an administrative transaction overview; no payment settings migration is required.

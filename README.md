@@ -1,32 +1,81 @@
+<div align="center">
+
 # JESB InfinitePay Gateway
 
-Plugin independente para WooCommerce e InfinitePay: checkout hospedado Pix/cartão, confirmação por `payment_check`, suporte a checkout clássico/Blocks e HPOS, painel operacional de pedidos recentes.
+**Gateway gratuito e independente para WooCommerce com Pix e cartão via checkout hospedado InfinitePay.**
 
-**Estado:** release candidate para testes e revisão. Não interpretar como aprovação do WordPress.org nem como auditoria de segurança completa.
+[![CI](https://github.com/erysouzace/jesb-infinitepay-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/erysouzace/jesb-infinitepay-gateway/actions/workflows/ci.yml)
+![Release](https://img.shields.io/badge/release-v1.1.1--candidate-orange)
+![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)
+![WooCommerce](https://img.shields.io/badge/WooCommerce-HPOS%20%2B%20Blocks-96588a)
 
-## Desenvolvimento
+[Releases](https://github.com/erysouzace/jesb-infinitepay-gateway/releases) · [Instalação](#instalação) · [Segurança](SECURITY.md) · [Contribuições](CONTRIBUTING.md)
 
-- Código do plugin: raiz deste repositório.
-- Documentação pública: `readme.txt`.
-- Workflow de CI: `.github/workflows/ci.yml`.
-- Assets WordPress.org: `.wordpress-org/` (não distribuídos no ZIP).
-- Releases: tags `v1.1.0`, `v1.1.1`, etc.
-- Antes de publicação: revisar Plugin Check, testes reais, compatibilidade e licença.
+</div>
 
-## Configuração
+> **Aviso:** v1.1.1 é uma candidata de homologação. Os testes locais não comprovam compatibilidade com todas as versões WooCommerce, nem segurança absoluta. Não utilizar em produção sem validação operacional.
 
-Ative WooCommerce e Checkout Integrado InfinitePay. Em WooCommerce > Configurações > Pagamentos, habilite JESB InfinitePay e informe a InfiniteTag. Para links de pagamento de uso único/expiração, defina `JESB_INFINITEPAY_API_KEY` no servidor, nunca no repositório.
+## Recursos
 
-## Privacidade
+| Área | Funcionalidade |
+| --- | --- |
+| Pagamento | Pix e cartão no checkout hospedado InfinitePay |
+| WooCommerce | Checkout clássico, Blocks e integração declarada com HPOS |
+| Confirmação | `payment_check` antes de chamar `payment_complete()` |
+| Segurança | Validação de valor, identificadores, URL e controle de concorrência |
+| Recuperação | Tentativas limitadas via Action Scheduler quando há NSU, transaction_nsu e slug |
+| Pedidos | Digitais baixáveis concluídos automaticamente; físicos e mistos processando |
+| Financeiro | Relatório de 7, 30 e 90 dias; limite explícito de até 2.000 pedidos da loja por consulta |
+| Privacidade | Logs sanitizados e processamento sem dados de cartão na loja |
 
-O checkout transfere dados do comprador à InfinitePay para processar o pedido. Consulte a seção *External service* em `readme.txt`. Não coloque dados reais, tokens ou logs sensíveis em issues.
+## Instalação
 
-## Publicação
+1. Faça **backup** e teste primeiro em um ambiente de homologação, utilizando HTTPS.
+2. Verifique que seu servidor usa **PHP 8.2 ou mais recente**, então utilize WooCommerce com moeda **BRL** e conta InfinitePay com Checkout Integrado.
+3. Instale o **ZIP do plugin** em **Plugins → Adicionar novo → Enviar plugin**. Não use o ZIP completo do repositório como plugin.
+4. Acesse **WooCommerce → Configurações → Pagamentos → JESB InfinitePay Gateway** e informe sua InfiniteTag.
+5. Configure a API Key opcional **somente no servidor** para habilitar validade e uso único:
 
-1. Criar repositório GitHub público com o slug `jesb-infinitepay-gateway`.
-2. Publicar o código e testar o fluxo de CI.
-3. Enviar pacote de submissão ao WordPress.org e aguardar análise.
-4. Após aprovação e criação do SVN, configurar segredos GitHub `SVN_USERNAME` e `SVN_PASSWORD` (preferencialmente senha de aplicação WordPress.org), e só então habilitar o workflow de deploy.
-5. Publicar tags/versionamentos revisados por release aprovada.
+```php
+// wp-config.php, antes de carregar wp-settings.php:
+define( 'JESB_INFINITEPAY_API_KEY', getenv( 'JESB_INFINITEPAY_API_KEY' ) );
+```
 
-Este projeto não é afiliado oficialmente à InfinitePay. Licença GPL-2.0-or-later.
+6. Confirme a URL REST pública, retorne ao checkout e teste o fluxo completo com pagamento controlado.
+
+## Fluxo financeiro e limitações
+
+1. WooCommerce cria o pedido e o plugin gera o link pela InfinitePay.
+2. O cliente paga na página segura da InfinitePay.
+3. O plugin recebe webhook ou dados de retorno; **não aprova o pedido apenas por receber a notificação**.
+4. O plugin verifica na API oficial a transação e o valor do pedido.
+5. Com identificadores válidos, falhas transitórias podem ser reconsultadas pelo **Action Scheduler** em até seis tentativas.
+6. Sem identificadores, expirado ou com divergência, o pedido fica para **conciliação manual**, sem criar cobranças concorrentes.
+
+**Importante:** links sem API Key não recebem expiração automática. O plugin não cancela cobranças nem consulta extrato e taxas reais da InfinitePay. O dashboard exibe informações de pedidos WooCommerce, não o saldo bancário.
+
+## Painel
+
+No WordPress: **WooCommerce → JESB InfinitePay**. Visão read-only de indicadores, pendências e transações com acesso `manage_woocommerce`. Consultas extensas são limitadas e identificadas como parciais.
+
+## Desenvolvimento e testes
+
+```bash
+php tests/check-metadata.php
+php tests/payment-flow.php
+find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+```
+
+Os testes mockados verificam identificadores, pagamentos divergentes, idempotência, pedidos mistos, links expirados, concorrência e limites de reconciliação. **Ainda é necessária homologação com WordPress, WooCommerce e a InfinitePay em ambiente real.**
+
+## Documentação
+
+- [Guia de publicação](PUBLICACAO.md)
+- [Segurança e LGPD](SECURITY.md)
+- [Como contribuir](CONTRIBUTING.md)
+- [Código de conduta](CODE_OF_CONDUCT.md)
+- [Readme do diretório WordPress.org](readme.txt)
+
+## Licença e marcas
+
+**GPL-2.0-or-later.** O arquivo `LICENSE` reproduz o texto integral da GPLv2. O projeto é desenvolvido pela JESB DIGITAL, **sem afiliação, certificação ou endosso oficial da InfinitePay ou WooCommerce**.

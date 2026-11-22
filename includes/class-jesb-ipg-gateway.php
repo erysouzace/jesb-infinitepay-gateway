@@ -56,24 +56,79 @@ class JESB_IPG_Gateway extends WC_Payment_Gateway {
             wc_add_notice( __( 'O valor mínimo da InfinitePay é R$ 1,00.', 'jesb-infinitepay-gateway' ), 'error' );
             return array( 'result' => 'failure' );
         }
-        // Reuse the same payment URL to avoid creating multiple payable invoices.
-        $old_url = $order->get_meta( '_jesb_ipg_payment_url', true );
-        $old_total = (int) $order->get_meta( '_jesb_ipg_amount_cents', true );
-        if ( JESB_IPG_API::is_valid_payment_url( $old_url ) && $old_total === $cents ) {
-            return array( 'result' => 'success', 'redirect' => $old_url );
-        }
-        // If the order total changed, do not silently create a competing payable link.
-        if ( $old_url ) {
-            wc_add_notice( __( 'O valor do pedido mudou após a geração do pagamento. Contate a loja para regularizar a cobrança.', 'jesb-infinitepay-gateway' ), 'error' );
+        // Prevent simultaneous checkout requests from generating competing invoices.
+        $lock = JESB_IPG_Attempts::lock( $order_id, 'create' );
+        if ( ! $lock ) {
+            wc_add_notice( __( 'Uma cobrança está sendo preparada. Aguarde e tente novamente.', 'jesb-infinitepay-gateway' ), 'notice' );
             return array( 'result' => 'failure' );
         }
+        try {
+            return $this->create_or_reuse_payment( $order, $cents );
+        } finally {
+            JESB_IPG_Attempts::unlock( $lock );
+        }
+    }
+    private function create_or_reuse_payment( WC_Order $order, $cents ) {
+        // Reload inside the lock to avoid stale metadata from concurrent requests.
+        $order = wc_get_order( $order->get_id() );
+        if ( $order->is_paid() ) {
+            return array( 'result' => 'success', 'redirect' => $this->get_return_url( $order ) );
+        }
+        $order_id = $order->get_id();
+        $old_url = (string) $order->get_meta( '_jesb_ipg_payment_url', true );
+        $old_total = (int) $order->get_meta( '_jesb_ipg_amount_cents', true );
+        $current = JESB_IPG_Attempts::current( $order );
+        $expiry = is_array( $current ) ? (int) ( $current['expires'] ?? 0 ) : 0;
+        if ( $old_url ) {
+            if ( $old_total !== $cents ) {
+                wc_add_notice( __( 'O valor do pedido mudou. A loja deve conciliar a cobrança anterior antes de continuar.', 'jesb-infinitepay-gateway' ), 'error' );
+                return array( 'result' => 'failure' );
+            }
+            if ( $expiry === 0 || time() < $expiry ) {
+                if ( JESB_IPG_API::is_valid_payment_url( $old_url ) ) {
+                    return array( 'result' => 'success', 'redirect' => $old_url );
+                }
+                wc_add_notice( __( 'O link anterior precisa de verificação manual.', 'jesb-infinitepay-gateway' ), 'error' );
+                return array( 'result' => 'failure' );
+            }
+            // An expired link is not reissued automatically. A delayed payment or
+            // an unreceived webhook could otherwise produce a second charge.
+            $order->update_meta_data( '_jesb_ipg_attention_required', 'yes' );
+            $order->save();
+            wc_add_notice( __( 'O link expirou. Contate a loja para conciliar a tentativa anterior antes de gerar outra cobrança.', 'jesb-infinitepay-gateway' ), 'error' );
+            return array( 'result' => 'failure' );
+        }
+        // Do not change an order NSU after an uncertain earlier network request:
+        // retrying the same payload may return the existing InfinitePay link.
         $nsu = (string) $order->get_meta( '_jesb_ipg_order_nsu', true );
         if ( ! $nsu ) {
-            $nsu = 'jig-' . $order->get_id() . '-' . wp_generate_password( 24, false, false );
+            $nsu = 'jig-' . $order_id . '-' . wp_generate_password( 24, false, false );
             $order->update_meta_data( '_jesb_ipg_order_nsu', $nsu );
             $order->update_meta_data( '_jesb_ipg_amount_cents', $cents );
             $order->save();
+        } elseif ( $old_total !== $cents ) {
+            wc_add_notice( __( 'Valor alterado durante tentativa de pagamento. Contate a loja.', 'jesb-infinitepay-gateway' ), 'error' );
+            return array( 'result' => 'failure' );
         }
+        $has_key = defined( 'JESB_INFINITEPAY_API_KEY' ) && '' !== (string) JESB_INFINITEPAY_API_KEY;
+        $expiry = $has_key ? time() + DAY_IN_SECONDS : 0;
+        // Persist the exact expiry to make retries deterministic.
+        if ( is_array( $current ) && array_key_exists( 'expires', $current ) ) {
+            $expiry = (int) $current['expires'];
+            if ( $has_key && 0 === $expiry ) {
+                // An old no-expiration attempt cannot be safely converted into
+                // a single-use invoice simply by enabling the API key.
+                wc_add_notice( __( 'Já existe uma tentativa sem expiração. Concilie com a loja antes de emitir outra cobrança.', 'jesb-infinitepay-gateway' ), 'error' );
+                return array( 'result' => 'failure' );
+            }
+        }
+        if ( $expiry > 0 && time() >= $expiry ) {
+            $order->update_meta_data( '_jesb_ipg_attention_required', 'yes' );
+            $order->save();
+            wc_add_notice( __( 'A tentativa anterior expirou antes de obter um link. Solicite conciliação à loja.', 'jesb-infinitepay-gateway' ), 'error' );
+            return array( 'result' => 'failure' );
+        }
+        JESB_IPG_Attempts::put( $order, array( 'nsu' => $nsu, 'amount' => $cents, 'expires' => $expiry, 'created' => time() ) );
         $payload = array(
             'handle' => JESB_IPG_API::handle(),
             'items' => JESB_IPG_Checkout_Data::items( $order ),
@@ -87,10 +142,10 @@ class JESB_IPG_Gateway extends WC_Payment_Gateway {
         $address = JESB_IPG_Checkout_Data::address( $order );
         if ( $address ) { $payload['address'] = $address; }
         // With a server-side API key, prevent paying the same link twice and set a finite lifetime.
-        if ( defined( 'JESB_INFINITEPAY_API_KEY' ) && '' !== (string) JESB_INFINITEPAY_API_KEY ) {
+        if ( $has_key ) {
             $payload['options'] = array(
                 'single_payment' => true,
-                'valid_until' => gmdate( 'Y-m-d\TH:i:s\Z', time() + DAY_IN_SECONDS ),
+                'valid_until' => gmdate( 'Y-m-d\TH:i:s\Z', $expiry ),
                 'require_delivery_address' => JESB_IPG_Checkout_Data::has_physical_items( $order ),
             );
         }
@@ -105,7 +160,14 @@ class JESB_IPG_Gateway extends WC_Payment_Gateway {
             wc_add_notice( __( 'A InfinitePay não retornou um endereço seguro de pagamento.', 'jesb-infinitepay-gateway' ), 'error' );
             return array( 'result' => 'failure' );
         }
+        // The payment might have been confirmed by a concurrent webhook while
+        // the link request was pending. Never revert a paid order to pending.
+        $order = wc_get_order( $order_id );
+        if ( $order->is_paid() ) {
+            return array( 'result' => 'success', 'redirect' => $this->get_return_url( $order ) );
+        }
         $order->update_meta_data( '_jesb_ipg_payment_url', esc_url_raw( $url ) );
+        JESB_IPG_Attempts::put( $order, array( 'nsu' => $nsu, 'amount' => $cents, 'expires' => $expiry, 'created' => time() ) );
         $order->save();
         if ( 'pending' !== $order->get_status() ) { $order->update_status( 'pending' ); }
         JESB_IPG_API::log( 'Link de pagamento gerado.', array( 'order_id' => $order_id ) );
@@ -123,6 +185,9 @@ class JESB_IPG_Gateway extends WC_Payment_Gateway {
         );
         $result = JESB_IPG_Confirmation::verify( $order, $params );
         if ( is_wp_error( $result ) ) {
+            if ( in_array( $result->get_error_code(), array( 'jesb_ipg_network', 'jesb_ipg_http', 'jesb_ipg_busy', 'jesb_ipg_unpaid' ), true ) ) {
+                JESB_IPG_Reconciliation::queue( $order, $params['order_nsu'], $params['transaction_nsu'], $params['slug'] );
+            }
             echo '<p>' . esc_html__( 'A confirmação está em análise. Se o pagamento foi realizado, não pague novamente. A loja poderá verificar sua transação.', 'jesb-infinitepay-gateway' ) . '</p>';
         }
     }
