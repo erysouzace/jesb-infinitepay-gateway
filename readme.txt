@@ -1,5 +1,5 @@
 === JESB InfinitePay Gateway ===
-Contributors: erysouzace
+Contributors: jesbdigital
 Tags: woocommerce, pix, payment-gateway, checkout, infinitepay
 Requires at least: 6.4
 Requires PHP: 8.2
